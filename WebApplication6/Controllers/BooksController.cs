@@ -17,25 +17,46 @@ namespace WebApplication6.Controllers
     {
         private BookServiceContext db = new BookServiceContext();
 
-        // GET: api/Books
-        public IQueryable<BookDTO> GetBooks()
+        List<BookDTO> books = new List<BookDTO>();
+
+        public BooksController() { }
+
+        public BooksController(List<BookDTO> books)
         {
-            var books = from b in db.Books
-                        select new BookDTO()
-                        {
-                            Id = b.Id,
-                            Title = b.Title,
-                            AuthorName = b.Author.Name
-                        };
+            this.books = books;
+        }
+
+        // GET: api/Books
+        public IEnumerable<BookDTO> GetBooks()
+        {
+            //var books = from b in db.Books
+            //            select new BookDTO()
+            //            {
+            //                Id = b.Id,
+            //                Title = b.Title,
+            //                AuthorName = b.Author.Name
+            //            };
 
             return books;
         }
 
         // GET: api/Books/5
-        [ResponseType(typeof(Book))]
+        [ResponseType(typeof(BookDetailDTO))]
         public async Task<IHttpActionResult> GetBook(int id)
         {
-            Book book = await db.Books.FindAsync(id);
+            var book = await db.Books
+                .Include(b => b.Author)
+                .Select(b => new BookDetailDTO()
+                {
+                    Id = b.Id,
+                    Title = b.Title,
+                    Year = b.Year,
+                    Price = b.Price,
+                    AuthorName = b.Author.Name,
+                    Genre = b.Genre
+                })
+                .SingleOrDefaultAsync(b => b.Id == id);
+
             if (book == null)
             {
                 return NotFound();
@@ -90,6 +111,17 @@ namespace WebApplication6.Controllers
 
             db.Books.Add(book);
             await db.SaveChangesAsync();
+
+            // New code:
+            // Load author name
+            db.Entry(book).Reference(x => x.Author).Load();
+
+            var dto = new BookDTO()
+            {
+                Id = book.Id,
+                Title = book.Title,
+                AuthorName = book.Author.Name
+            };
 
             return CreatedAtRoute("DefaultApi", new { id = book.Id }, book);
         }
