@@ -3,31 +3,42 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using WebApplication6.Models;
 using System.Collections.Generic;
 using WebApplication6.Controllers;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace UnitTestProject1
 {
     [TestClass]
     public class UnitTest1
     {
+        private BookServiceContext db = new BookServiceContext();
+
         [TestMethod]
         public void GetAllProducts_ShouldReturnAllProducts()
         {
-            var testbooks = GetTestProducts();
-            var controller = new BooksController(testbooks);
+            var mockBooks = GetTestProducts();
+            var books = from b in db.Books
+                        select new BookDTO()
+                        {
+                            Id = b.Id,
+                            Title = b.Title,
+                            AuthorName = b.Author.Name
+                        };
+            var controller = new BooksController(books);
 
-            var result = controller.GetBooks() as List<BookDTO>;
-            Assert.AreEqual(testbooks.Count, result.Count);
+            var result = controller.GetBooks() as IEnumerable<BookDTO>;
+            Assert.AreEqual(books.Count(), result.Count());
         }
 
-        //[TestMethod]
-        //public async Task GetAllProductsAsync_ShouldReturnAllProducts()
-        //{
-        //    var testProducts = GetTestProducts();
-        //    var controller = new SimpleProductController(testProducts);
+        [TestMethod]
+        public async Task GetAllProductsAsync_ShouldReturnAllProducts()
+        {
+            //var testbooks = GetTestProducts();
+            //var controller = new BooksController(testbooks);
 
-        //    var result = await controller.GetAllProductsAsync() as List<Product>;
-        //    Assert.AreEqual(testProducts.Count, result.Count);
-        //}
+            //var result = await controller.GetBooksAsync() as List<BookDTO>;
+            //Assert.AreEqual(testbooks.Count, result.Count);
+        }
 
         //[TestMethod]
         //public void GetProduct_ShouldReturnCorrectProduct()

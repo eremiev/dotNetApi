@@ -17,11 +17,11 @@ namespace WebApplication6.Controllers
     {
         private BookServiceContext db = new BookServiceContext();
 
-        List<BookDTO> books = new List<BookDTO>();
+        IQueryable<BookDTO> books;
 
         public BooksController() { }
 
-        public BooksController(List<BookDTO> books)
+        public BooksController(IQueryable<BookDTO> books)
         {
             this.books = books;
         }
@@ -29,16 +29,21 @@ namespace WebApplication6.Controllers
         // GET: api/Books
         public IEnumerable<BookDTO> GetBooks()
         {
-            //var books = from b in db.Books
-            //            select new BookDTO()
-            //            {
-            //                Id = b.Id,
-            //                Title = b.Title,
-            //                AuthorName = b.Author.Name
-            //            };
+            var books = from b in db.Books
+                        select new BookDTO()
+                        {
+                            Id = b.Id,
+                            Title = b.Title,
+                            AuthorName = b.Author.Name
+                        };
 
             return books;
         }
+
+        //public async Task<IEnumerable<BookDTO>> GetBooksAsync()
+        //{
+        //    return await Task.FromResult(GetBooks());
+        //}
 
         // GET: api/Books/5
         [ResponseType(typeof(BookDetailDTO))]
