@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using WebApplication6.Controllers;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Web.Http.Results;
+using System.Data.Entity;
 
 namespace UnitTestProject1
 {
@@ -14,62 +16,72 @@ namespace UnitTestProject1
         private BookServiceContext db = new BookServiceContext();
 
         [TestMethod]
-        public void GetAllProducts_ShouldReturnAllProducts()
+        public void GetAllBooks_ShouldReturnAllProducts()
         {
             var mockBooks = GetTestProducts();
-            var books = from b in db.Books
-                        select new BookDTO()
-                        {
-                            Id = b.Id,
-                            Title = b.Title,
-                            AuthorName = b.Author.Name
-                        };
-            var controller = new BooksController(books);
+            var dbBooks = from b in db.Books
+                          select new BookDTO()
+                          {
+                              Id = b.Id,
+                              Title = b.Title,
+                              AuthorName = b.Author.Name
+                          };
+            var controller = new BooksController();
 
             var result = controller.GetBooks() as IEnumerable<BookDTO>;
-            Assert.AreEqual(books.Count(), result.Count());
+            Assert.AreEqual(dbBooks.Count(), result.Count());
         }
 
         [TestMethod]
-        public async Task GetAllProductsAsync_ShouldReturnAllProducts()
+        public async Task GetAllBooksAsync_ShouldReturnAllProducts()
         {
-            //var testbooks = GetTestProducts();
-            //var controller = new BooksController(testbooks);
+            var mockBooks = GetTestProducts();
 
-            //var result = await controller.GetBooksAsync() as List<BookDTO>;
-            //Assert.AreEqual(testbooks.Count, result.Count);
+            var dbBooks = from b in db.Books
+                          select new BookDTO()
+                          {
+                              Id = b.Id,
+                              Title = b.Title,
+                              AuthorName = b.Author.Name
+                          };
+
+            var controller = new BooksController();
+            var result = await controller.GetBooksAsync() as IEnumerable<BookDTO>;
+            Assert.AreEqual(dbBooks.Count(), result.Count());
         }
 
-        //[TestMethod]
-        //public void GetProduct_ShouldReturnCorrectProduct()
-        //{
-        //    var testProducts = GetTestProducts();
-        //    var controller = new SimpleProductController(testProducts);
+        [TestMethod]
+        public async Task GetBook_ShouldReturnCorrectBook()
+        {
+            var testProducts = GetTestProducts();
 
-        //    var result = controller.GetProduct(4) as OkNegotiatedContentResult<Product>;
-        //    Assert.IsNotNull(result);
-        //    Assert.AreEqual(testProducts[3].Name, result.Content.Name);
-        //}
+            var dbBook = db.Books
+                .Include(b => b.Author)
+                .Select(b => new BookDetailDTO()
+                {
+                    Id = b.Id,
+                    Title = b.Title,
+                    Year = b.Year,
+                    Price = b.Price,
+                    AuthorName = b.Author.Name,
+                    Genre = b.Genre
+                })
+                .FirstOrDefault();
 
-        //[TestMethod]
-        //public async Task GetProductAsync_ShouldReturnCorrectProduct()
-        //{
-        //    var testProducts = GetTestProducts();
-        //    var controller = new SimpleProductController(testProducts);
+            var controller = new BooksController();
+            var result = await controller.GetBook(dbBook.Id) as OkNegotiatedContentResult<BookDetailDTO>;
+            Assert.IsNotNull(result);
+            Assert.AreEqual(dbBook.AuthorName, result.Content.AuthorName);
+        }
 
-        //    var result = await controller.GetProductAsync(4) as OkNegotiatedContentResult<Product>;
-        //    Assert.IsNotNull(result);
-        //    Assert.AreEqual(testProducts[3].Name, result.Content.Name);
-        //}
+        [TestMethod]
+        public async Task GetBook_ShouldNotFindBook()
+        {
 
-        //[TestMethod]
-        //public void GetProduct_ShouldNotFindProduct()
-        //{
-        //    var controller = new SimpleProductController(GetTestProducts());
-
-        //    var result = controller.GetProduct(999);
-        //    Assert.IsInstanceOfType(result, typeof(NotFoundResult));
-        //}
+            var controller = new BooksController();
+            var result = await controller.GetBook(-1);
+            Assert.IsInstanceOfType(result, typeof(NotFoundResult));
+        }
 
         private List<BookDTO> GetTestProducts()
         {
